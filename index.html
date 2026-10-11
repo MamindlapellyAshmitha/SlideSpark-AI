@@ -1,0 +1,309 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>SlideSpark AI</title>
+
+<style>
+* { box-sizing: border-box; }
+
+body {
+    margin: 0;
+    font-family: Arial, sans-serif;
+    background: #f1f0ff;
+    color: #25214b;
+}
+
+header {
+    background: linear-gradient(135deg, #29245c, #6554e8);
+    color: white;
+    text-align: center;
+    padding: 28px 16px;
+}
+
+header h1 { margin: 0 0 10px; }
+header p { margin: 0; }
+
+main {
+    max-width: 850px;
+    margin: 25px auto;
+    padding: 16px;
+}
+
+.card {
+    background: white;
+    padding: 24px;
+    border-radius: 16px;
+    box-shadow: 0 5px 20px #00000012;
+}
+
+label {
+    display: block;
+    margin-top: 16px;
+    font-weight: bold;
+}
+
+input, select {
+    width: 100%;
+    padding: 12px;
+    margin-top: 8px;
+    border: 1px solid #ccc;
+    border-radius: 8px;
+    font-size: 16px;
+}
+
+button {
+    background: #6554e8;
+    color: white;
+    border: none;
+    padding: 12px 18px;
+    border-radius: 8px;
+    cursor: pointer;
+    margin: 12px 6px 0 0;
+    font-size: 15px;
+}
+
+button:hover { background: #4938c9; }
+
+.actions { margin-top: 12px; }
+
+.slide {
+    background: #faf9ff;
+    border-left: 5px solid #6554e8;
+    padding: 18px;
+    margin-top: 16px;
+    border-radius: 8px;
+    page-break-inside: avoid;
+}
+
+.slide h3 { margin-top: 0; }
+
+.notes {
+    color: #555;
+    font-size: 14px;
+    border-top: 1px solid #ddd;
+    padding-top: 10px;
+}
+
+footer {
+    text-align: center;
+    padding: 20px;
+    color: #666;
+    font-size: 13px;
+}
+
+@media print {
+    body { background: white; }
+    header, .card, footer { box-shadow: none; }
+    header { background: #29245c !important; }
+    main { margin: 0; max-width: none; padding: 0; }
+    .controls, .actions, .no-print { display: none !important; }
+    .slide {
+        page-break-after: always;
+        break-after: page;
+        min-height: 90vh;
+        margin: 0;
+        border: none;
+        padding: 40px;
+    }
+    .slide:last-child {
+        page-break-after: auto;
+        break-after: auto;
+    }
+}
+</style>
+</head>
+
+<body>
+
+<header>
+    <h1>✨ SlideSpark AI</h1>
+    <p>Turn your ideas into presentations!</p>
+</header>
+
+<main>
+    <div class="card">
+        <div class="controls">
+            <h2>Create Your Presentation</h2>
+            <p>Enter a topic, choose your slide count and select a theme.</p>
+
+            <label for="topic">Presentation topic</label>
+            <input id="topic" placeholder="Example: Artificial Intelligence">
+
+            <label for="count">Number of slides</label>
+            <select id="count">
+                <option value="6">6 slides</option>
+                <option value="8">8 slides</option>
+                <option value="10">10 slides</option>
+            </select>
+
+            <label for="theme">Choose a theme</label>
+            <select id="theme">
+                <option value="6554e8">Purple</option>
+                <option value="087eae">Blue</option>
+                <option value="16845b">Green</option>
+            </select>
+
+            <button onclick="generateSlides()">Generate Presentation</button>
+        </div>
+
+        <div id="status" role="status"></div>
+        <div id="output"></div>
+
+        <div class="actions no-print">
+            <button id="notesButton" onclick="exportNotes()" hidden>
+                Download Speaker Notes
+            </button>
+
+            <button id="pdfButton" onclick="downloadPDF()" hidden>
+                Save Presentation as PDF
+            </button>
+        </div>
+    </div>
+</main>
+
+<footer>
+    SlideSpark AI — Presentation creation made simpler.
+</footer>
+
+<script>
+let presentation = [];
+
+const slideTemplates = [
+    {
+        title: "Introduction",
+        text: topic => topic + " is an important topic to understand in today's world."
+    },
+    {
+        title: "Why It Matters",
+        text: topic => topic + " can help address needs and challenges in different fields."
+    },
+    {
+        title: "Key Concepts",
+        text: topic => "The main concepts of " + topic + " help us understand its purpose and value."
+    },
+    {
+        title: "How It Works",
+        text: topic => "Understanding the process, tools and methods behind " + topic + " is essential."
+    },
+    {
+        title: "Real-World Applications",
+        text: topic => topic + " can be explored through practical examples and real-world use cases."
+    },
+    {
+        title: "Benefits",
+        text: topic => "Potential benefits of " + topic + " include better solutions, improved efficiency and new opportunities."
+    },
+    {
+        title: "Challenges",
+        text: topic => "Challenges related to " + topic + " may include cost, access, accuracy and responsible use."
+    },
+    {
+        title: "Future Opportunities",
+        text: topic => "Future developments may create new ways to improve and apply " + topic + "."
+    },
+    {
+        title: "Recommendations",
+        text: topic => "Start with clear goals, research reliable information and evaluate results when exploring " + topic + "."
+    },
+    {
+        title: "Conclusion",
+        text: topic => topic + " offers ideas worth exploring. Continued learning and practical evaluation are important."
+    }
+];
+
+function generateSlides() {
+    const topic = document.getElementById("topic").value.trim();
+    const count = Number(document.getElementById("count").value);
+    const theme = document.getElementById("theme").value;
+    const output = document.getElementById("output");
+    const status = document.getElementById("status");
+
+    if (!topic) {
+        alert("Please enter a presentation topic.");
+        document.getElementById("topic").focus();
+        return;
+    }
+
+    presentation = [{
+        title: topic,
+        content: "This presentation introduces " + topic + " and explores its importance.",
+        notes: "Welcome the audience. Introduce the topic and explain why you selected it."
+    }];
+
+    for (let i = 1; i < count; i++) {
+        const template = slideTemplates[(i - 1) % slideTemplates.length];
+        presentation.push({
+            title: template.title,
+            content: template.text(topic),
+            notes: "Explain " + template.title.toLowerCase() +
+                " in your own words. Add a relevant example about " + topic + "."
+        });
+    }
+
+    output.replaceChildren();
+    status.textContent = "Your presentation is ready: " + count + " slides.";
+
+    presentation.forEach((item, index) => {
+        const slide = document.createElement("section");
+        slide.className = "slide";
+        slide.style.borderLeftColor = "#" + theme;
+
+        const heading = document.createElement("h3");
+        heading.textContent = "Slide " + (index + 1) + ": " + item.title;
+        heading.style.color = "#" + theme;
+
+        const content = document.createElement("p");
+        content.textContent = item.content;
+
+        const notes = document.createElement("p");
+        notes.className = "notes";
+        notes.textContent = "Speaker Notes: " + item.notes;
+
+        slide.append(heading, content, notes);
+        output.appendChild(slide);
+    });
+
+    document.getElementById("notesButton").hidden = false;
+    document.getElementById("pdfButton").hidden = false;
+}
+
+function exportNotes() {
+    if (!presentation.length) {
+        alert("Generate a presentation first.");
+        return;
+    }
+
+    const text = presentation.map((slide, i) =>
+        "Slide " + (i + 1) + ": " + slide.title +
+        "\n" + slide.content +
+        "\nSpeaker Notes: " + slide.notes
+    ).join("\n\n");
+
+    const blob = new Blob([text], { type: "text/plain;charset=utf-8" });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+
+    link.href = url;
+    link.download = "SlideSpark-Speaker-Notes.txt";
+    document.body.appendChild(link);
+    link.click();
+    link.remove();
+
+    setTimeout(() => URL.revokeObjectURL(url), 1000);
+}
+
+function downloadPDF() {
+    if (!presentation.length) {
+        alert("Generate a presentation first.");
+        return;
+    }
+
+    window.print();
+}
+</script>
+
+</body>
+</html>
